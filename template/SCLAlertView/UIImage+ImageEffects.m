@@ -296,7 +296,10 @@
 
 + (UIImage *)convertViewToImage
 {
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     UIWindow *keyWindow = [[UIApplication sharedApplication]keyWindow];
+    #pragma clang diagnostic pop
     CGRect rect = [keyWindow bounds];
     UIGraphicsBeginImageContextWithOptions(rect.size, YES, 0.0f);
     CGContextRef context = UIGraphicsGetCurrentContext();

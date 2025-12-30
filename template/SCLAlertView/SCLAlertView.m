@@ -234,7 +234,10 @@ SCLTimerDisplay *buttonTimer;
     _viewText.frame = CGRectMake(12.0f, _subTitleY, _windowWidth - 24.0f, _subTitleHeight);
     _viewText.textContainerInset = UIEdgeInsetsZero;
     _viewText.textContainer.lineFragmentPadding = 0;
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     self.automaticallyAdjustsScrollViewInsets = NO;
+    #pragma clang diagnostic pop
     
     // Content View
     _contentView.backgroundColor = [UIColor whiteColor];
@@ -253,7 +256,10 @@ SCLTimerDisplay *buttonTimer;
 
 - (void)setupNewWindow {
     // Save previous window
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     self.previousWindow = [UIApplication sharedApplication].keyWindow;
+    #pragma clang diagnostic pop
     
     // Create a new one to show the alert
     UIWindow *alertWindow = [[UIWindow alloc] initWithFrame:[self mainScreenFrame]];
@@ -520,7 +526,10 @@ SCLTimerDisplay *buttonTimer;
 - (void)addActivityIndicatorView
 {
     // Add UIActivityIndicatorView
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     _activityIndicatorView = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
+    #pragma clang diagnostic pop
     _activityIndicatorView.frame = CGRectMake(kCircleHeight / 2 - kActivityIndicatorHeight / 2, kCircleHeight / 2 - kActivityIndicatorHeight / 2, kActivityIndicatorHeight, kActivityIndicatorHeight);
     [_circleView addSubview:_activityIndicatorView];
 }
@@ -1156,7 +1165,10 @@ SCLTimerDisplay *buttonTimer;
 
 - (CGRect)mainScreenFrame
 {
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     return [self isAppExtension] ? _extensionBounds : [UIApplication sharedApplication].keyWindow.bounds;
+    #pragma clang diagnostic pop
 }
 
 - (BOOL)isAppExtension
@@ -1176,7 +1188,11 @@ SCLTimerDisplay *buttonTimer;
 
 - (void)makeBlurBackground
 {
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     UIView *appView = (_usingNewWindow) ? [UIApplication sharedApplication].keyWindow.subviews.lastObject : _rootViewController.view;
+    #pragma clang diagnostic pop
+    
     UIImage *image = [UIImage convertViewToImage:appView];
     UIImage *blurSnapshotImage = [image applyBlurWithRadius:5.0f
                                                   tintColor:[UIColor colorWithWhite:0.2f

@@ -1,52 +1,178 @@
 #import "Macros.h"
 
+//================== welcome dialog window ========================
+void welcomeNotification() {
+    SCLAlertView *alert = [[SCLAlertView alloc] initWithNewWindow];
+
+    // Website link, remove it if you don't need it.
+    [alert addButton: NSSENCRYPT("Visit Me!") actionBlock: ^(void) {
+      #pragma clang diagnostic push
+      #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+      [[UIApplication sharedApplication] openURL: [NSURL URLWithString: NSSENCRYPT("https://google.com")]];
+      #pragma clang diagnostic pop
+    }];
+
+    [alert addButton: NSSENCRYPT("Thankyou, understood.") actionBlock: ^(void) {
+    }];
+
+    alert.shouldDismissOnTapOutside = NO;
+    alert.customViewColor = [UIColor purpleColor];  
+    alert.showAnimationType = SCLAlertViewShowAnimationSlideInFromCenter;   
+    
+    [alert showSuccess: nil
+            subTitle:NSSENCRYPT("TEST APP- Mod Menu \n\nThis Mod Menu has been made by @@USER@@, do not share this without proper credits and my permission. \n\nEnjoy!") 
+              closeButtonTitle:nil
+                duration:99999999.0f];
+}
+
+/***********************************************************
+  YOU CAN DEFINE YOUR HOOKS HERE!
+***********************************************************/
+void (*old_Update_CarLight)(void *instance);
+void Update_CarLight(void *instance) {
+	if (instance != nullptr && [switches isSwitchOn:NSSENCRYPT("CarLight")]) {
+		// ...
+	} else {
+		// ...
+	}
+	return old_Update_CarLight(instance);
+}
+
+void Player_Killed(void *instance, bool needKill) {
+	// ...
+}
+
+
 /***********************************************************
   INSIDE THE FUNCTION BELOW YOU'LL HAVE TO ADD YOUR SWITCHES!
 ***********************************************************/
 void setup() {
 
-  //patching offsets directly, without switch
-  patchOffset(ENCRYPTOFFSET("0x1002DB3C8"), ENCRYPTHEX("0xC0035FD6"));
-  patchOffset(ENCRYPTOFFSET("0x10020D2D4"), ENCRYPTHEX("0x00008052C0035FD6"));
-
-  // You can write as many bytes as you want to an offset
-  patchOffset(ENCRYPTOFFSET("0x10020D3A8"), ENCRYPTHEX("0x00F0271E0008201EC0035FD6"));
-  // or  
-  patchOffset(ENCRYPTOFFSET("0x10020D3A8"), ENCRYPTHEX("00F0271E0008201EC0035FD6"));
+  // ===========INTRODUCE: PATCH===========
+  // patching offsets directly, without switch:
+  // this base (offset, hex) variant:
+  PATCH(ENCRYPT("0x1002DB3C8"), ENCRYPT("0xC0035FD6"));
+  // hex: you can write as many bytes as you want to an offset
+  PATCH(ENCRYPT("0x10020D3A8"), ENCRYPT("0x00F0271E0008201EC0035FD6"));
+  // or
+  PATCH(ENCRYPT("0x10020D3A8"), ENCRYPT("00F0271E0008201EC0035FD6"));
   // spaces are fine too
-  patchOffset(ENCRYPTOFFSET("0x10020D3A8"), ENCRYPTHEX("00 F0 27 1E 00 08 20 1E C0 03 5F D6"));
-
-
+  PATCH(ENCRYPT("0x10020D3A8"), ENCRYPT("00 F0 27 1E 00 08 20 1E C0 03 5F D6"));
+  
+  // alt possibles new usage variants:
+  // symbol, hex
+  PATCH(ENCRYPT("example__sym"), ENCRYPT("0xC0035FD6"));
+  // offset, asm
+  PATCH(ENCRYPT("0x1002DB3C8"), ENCRYPT("ret"));
+  // symbol, asm
+  PATCH(ENCRYPT("example__sym"), ENCRYPT("ret"));
+  // asm allows you to avoid using hex code, as it is generated automatically from the instructions
+  // - this is the awesome option if you know what you're doing
+  // recommended insert ';' to separate statements, example: "mov x0, #1; ret"
+  // recommended to test your instructions on https://armconverter.com or
+  // https://shell-storm.org/online/Online-Assembler-and-Disassembler/
+  // don't forget enable ASM_SUPPORT in makefile for usage
+  
+  
+  // ===========INTRODUCE: rPATCH===========
+  // Relative patches allow you to speed up patch creation if you are sure that the offsets within methods rarely change
+  // So, you only need to update the offset instruction for the function
+  // https://www.rapidtables.com/calc/math/hex-calculator.html <- use hex calculator to calculate the offset relative to the method
+  // ! This is an extremely unstable due to the hard offsets... don't forget to check the logs to identify outdated offsets
+  // this base (offset, offset, hex) variant:
+  rPATCH(ENCRYPT("0x4B3F18"), ENCRYPT("0x11C"), ENCRYPT("30 00 00 14"));
+  
+  // alt possibles usage variants:
+  // symbol, offset, hex
+  rPATCH(ENCRYPT("example__sym"), ENCRYPT("0x11C"), ENCRYPT("30 00 00 14"));
+  // offset, offset, asm
+  rPATCH(ENCRYPT("0x4B3F18"), ENCRYPT("0x11C"), ENCRYPT("b #0xc0"));
+  // symbol, offset, asm
+  rPATCH(ENCRYPT("example__sym"), ENCRYPT("0x11C"), ENCRYPT("b #0xc0"));
+  
+  // ===========INTRODUCE: dPATCH===========
+  // asm can be especially useful with creating dynamic deep patches:
+  // (offset, asm pattern, ... asm args)
+  dPATCH(ENCRYPT("0x4B3F18"), ENCRYPT("mov w%d, #%d"), 0, 222);
+  // (symbol, asm pattern, ... asm args)
+  dPATCH(ENCRYPT("example__sym"), ENCRYPT("mov w%d, #%d"), 0, 222);
+  // standard formatting specifiers are supported (%d, %i, %x, %s, etc.)
+  
+  // ===========INTRODUCE: drPATCH===========
+  // rPATCH + dPATCH hybrid
+  // (offset, offset, asm pattern, ... asm args)
+  drPATCH(ENCRYPT("0x4B3F18"), ENCRYPT("0x11C"), ENCRYPT("mov w%d, #%d"), 0, 222);
+  // (symbol, offset, asm pattern, ... asm args)
+  drPATCH(ENCRYPT("example__sym"), ENCRYPT("0x11C"), ENCRYPT("mov w%d, #%d"), 0, 222);
+  
+  // ===========INTRODUCE: HOOK===========
+  // offset variant:
+  HOOK(ENCRYPT("0x4B3F18"), Update_CarLight, old_Update_CarLight);
+  // symbol:
+  HOOK(ENCRYPT("example__sym"), Update_CarLight, old_Update_CarLight);
+  // no orig:
+  HOOK_NO_ORIG(ENCRYPT("0x4B3F18"), Player_Killed);
+  // or symbol variant:
+  HOOK_NO_ORIG(ENCRYPT("example__sym"), Player_Killed);
+  
+  
+  // ===========INTRODUCE: Switches===========
   // Empty switch - usefull with hooking
-  [switches addSwitch:NSSENCRYPT("Masskill")
-    description:NSSENCRYPT("Teleport all enemies to you without them knowing")
-  ];
+  [switches addSwitch:NSSENCRYPT("CarLight")
+      description:NSSENCRYPT("Enable car lights")];
+  
 
   // Offset Switch with one patch
   [switches addOffsetSwitch:NSSENCRYPT("God Mode")
     description:NSSENCRYPT("You can't die")
-    offsets: {
-      ENCRYPTOFFSET("0x1005AB148")
+    offsets: { // offset/sym
+      ENCRYPT("0x1005AB148")
     }
-    bytes: {
-      ENCRYPTHEX("0x00E0BF12C0035FD6")
+    data: { // hex/asm
+      ENCRYPT("0x00E0BF12C0035FD6")
     }
   ];
 
   // Offset switch with multiple patches
+  // you can unhindered mix offset/sym and hex/asm if need
   [switches addOffsetSwitch:NSSENCRYPT("One Hit Kill")
     description:NSSENCRYPT("Enemy will die instantly")
-    offsets: {
-      ENCRYPTOFFSET("0x1001BB2C0"),
-      ENCRYPTOFFSET("0x1002CB3B0"),
-      ENCRYPTOFFSET("0x1002CB3B8")
+    offsets: { // offset/sym
+      ENCRYPT("0x1001BB2C0"),
+      ENCRYPT("example__sym"),
+      ENCRYPT("0x1002CB3B8")
     }
-    bytes: {
-      ENCRYPTHEX("0x00E0BF12C0035FD6"),
-      ENCRYPTHEX("0xC0035FD6"),
-      ENCRYPTHEX("0x00F0271E0008201EC0035FD6")
+    data: { // hex/asm
+      ENCRYPT("mov w0, #0xffffff; ret"),
+      ENCRYPT("0xC0035FD6"),
+      ENCRYPT("0x00F0271E0008201EC0035FD6")
     }
   ];
+  
+  // Also supports relative switches:
+  [switches addOffsetSwitch:NSSENCRYPT("One Hit Kill")
+    description:NSSENCRYPT("Enemy will die instantly")
+    roots: { // offset/sym
+      ENCRYPT("0x4B3F18"),
+      ENCRYPT("0x1001BB2C0"),
+      ENCRYPT("example__sym")
+    }
+    offsets: { // only offset
+      ENCRYPT("0x210"),
+      ENCRYPT("0x18"),
+      ENCRYPT("0x58")
+    }
+    data: { // hex/asm
+      ENCRYPT("0x1002CB3B8"),
+      ENCRYPT("mov w0, #0xffffff; ret"),
+      ENCRYPT("01 18 28 1E")
+    }
+  ];
+  
+  // ===========INTRODUCE: Other===========
+  
+  // Just text, useful for grouping and placing other information
+  [switches addInfo:NSSENCRYPT("Category 1") height:ENCRYPT("20")];
 
   // Textfield Switch - used in hooking
   [switches addTextfieldSwitch:NSSENCRYPT("Custom Gold")
@@ -61,6 +187,12 @@ void setup() {
     maximumValue:10
     sliderColor:UIColorFromHex(0xBD0000)
   ];
+  
+  // you can use this for force restore without opening the menu:
+  [menu restoreForced];
+
+  // initialization of the welcome dialog is now here
+  welcomeNotification();
 }
 
 
@@ -79,16 +211,16 @@ void setup() {
 ************************************************************************************************************/
 void setupMenu() {
 
-  // If a game uses a framework as base executable, you can enter the name here.
-  // For example: UnityFramework, in that case you have to replace NULL with "UnityFramework" (note the quotes)
-  [menu setFrameworkName:NULL];
+  // The base lib file is used for implementation, change it if you need a other file:
+  [menu setFrameworkName: "UnityFramework"];
 
   menu = [[Menu alloc]  
             initWithTitle:NSSENCRYPT("@@APPNAME@@ - Mod Menu")
             titleColor:[UIColor whiteColor]
             titleFont:NSSENCRYPT("Copperplate-Bold")
             credits:NSSENCRYPT("This Mod Menu has been made by @@USER@@, do not share this without proper credits and my permission. \n\nEnjoy!")
-            headerColor:UIColorFromHex(0xBD0000)
+            headerColor:UIColorFromHex(0xBD0000) //popup background color: SCLAAlertView.m line.251
+            addInfoTitleColor:[UIColor redColor]
             switchOffColor:[UIColor darkGrayColor]
             switchOnColor:UIColorFromHex(0x00ADF2)
             switchTitleFont:NSSENCRYPT("Copperplate-Bold")
@@ -106,37 +238,27 @@ void setupMenu() {
     setup();
 }
 
-// If the menu button doesn't show up; Change the timer to a bigger amount.
-static void didFinishLaunching(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef info) {
-  timer(5) {
-    SCLAlertView *alert = [[SCLAlertView alloc] initWithNewWindow];
-
-    // Website link, remove it if you don't need it.
-    [alert addButton: NSSENCRYPT("Visit Me!") actionBlock: ^(void) {
-      [[UIApplication sharedApplication] openURL: [NSURL URLWithString: NSSENCRYPT("@@SITE@@")]];
-      timer(2) {
-        setupMenu();
-      });        
-    }];
-
-    [alert addButton: NSSENCRYPT("Thankyou, understood.") actionBlock: ^(void) {
-      timer(2) {
-        setupMenu();
-      });
-    }];    
-
-    alert.shouldDismissOnTapOutside = NO;
-    alert.customViewColor = [UIColor purpleColor];  
-    alert.showAnimationType = SCLAlertViewShowAnimationSlideInFromCenter;   
-    
-    [alert showSuccess: nil
-            subTitle:NSSENCRYPT("@@APPNAME@@ - Mod Menu \n\nThis Mod Menu has been made by @@USER@@, do not share this without proper credits and my permission. \n\nEnjoy!") 
-              closeButtonTitle:nil
-                duration:99999999.0f];
-  });
-}
 
 
+
+//============= adaptive init =======================
 %ctor {
-  CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), NULL, &didFinishLaunching, (CFStringRef)UIApplicationDidFinishLaunchingNotification, NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
+  float maxTime = 5.0f; // increase for slower devices
+  float minTime = 0.5f; // reduce for faster devices
+
+  int attempts = (int)(maxTime / minTime);
+
+  for (int i = 1; i <= attempts; i++) {
+    float delay = minTime * i;
+    
+    timer(delay) {
+      if (![menu inited]) {
+        if([menu needInit]) { 
+          setupMenu();
+          return;
+        }
+        if(i == attempts) [menu showPopup:NSSENCRYPT("MENU FAILED") description:NSSENCRYPT("Failed create menu: !needInit + timeout")];
+      }
+    });
+  }
 }

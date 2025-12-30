@@ -10,9 +10,14 @@ IGNORE_WARNINGS=0
 # 0 to compile for rootful jailbreaks, 1 otherwise.
 ROOTLESS = 0
 
+# 1 to support asm patches, required iOS 14+
+ASM_SUPPORT = 0
+
 ifeq ($(ROOTLESS), 1)
 THEOS_PACKAGE_SCHEME = rootless
-endif 
+else
+ASM_SUPPORT = 0 # iOS14+ - has no rootfull
+endif
 
 # only set this  to 1 if you are on mobile theos
 # assuming you have an sdk at your theos sdks directory
@@ -26,10 +31,14 @@ ifeq ($(MOBILE_THEOS),1)
   SDK_PATH = $(THEOS)/sdks/iPhoneOS11.2.sdk/
   $(info ===> Setting SYSROOT to $(SDK_PATH)...)
   SYSROOT = $(SDK_PATH)
+  ASM_SUPPORT = 0 # for support need SDK minimum iPhoneOS14.3.sdk, if it is available for you, update it in SDK_PATH and remove this line
 else
   TARGET = iphone:clang:latest:8.0
 endif
 
+ifeq ($(ASM_SUPPORT), 1)
+TARGET = iphone:clang:latest:14.0
+endif
 
 ## Common frameworks ##
 PROJ_COMMON_FRAMEWORKS = UIKit Foundation Security QuartzCore CoreGraphics CoreText
@@ -44,7 +53,7 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = @@PROJECTNAME@@
 
 @@PROJECTNAME@@_CFLAGS = -fobjc-arc
-@@PROJECTNAME@@_CCFLAGS = -std=c++11 -fno-rtti -fno-exceptions -DNDEBUG
+@@PROJECTNAME@@_CCFLAGS = -std=c++17 -fno-rtti -fno-exceptions -DNDEBUG
 
 ifeq ($(IGNORE_WARNINGS),1)
   @@PROJECTNAME@@_CFLAGS += -w
@@ -53,6 +62,12 @@ endif
 
 
 @@PROJECTNAME@@_FILES = Tweak.xm $(MENU_SRC) $(KITTYMEMORY_SRC) $(SCLALERTVIEW_SRC)
+
+ifeq ($(ASM_SUPPORT), 1)
+    @@PROJECTNAME@@_LDFLAGS += KittyMemory/Deps/Keystone/libs-ios/arm64/libkeystone.a
+else
+    @@PROJECTNAME@@_CFLAGS += -DkNO_KEYSTONE
+endif
 
 @@PROJECTNAME@@_LIBRARIES += substrate
 

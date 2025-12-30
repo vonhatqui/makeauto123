@@ -3,10 +3,13 @@
 //  ModMenu
 //
 //  Created by Joey on 3/14/19.
-//  Copyright © 2019 Joey. All rights reserved.
+//  Updated by ABS on 28/12/25.
+//  Copyright © 2025 Joey. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
+#import "Obfuscate.h"
+#import <dlfcn.h>
 #import "Menu.h"
 
 @interface Menu ()
@@ -27,6 +30,7 @@ UIScrollView *scrollView;
 CGFloat menuWidth;
 CGFloat scrollViewX;
 NSString *credits;
+UIColor *categoryColor;
 UIColor *switchOnColor;
 NSString *switchTitleFont;
 UIColor *switchTitleColor;
@@ -46,15 +50,34 @@ UIWindow *mainWindow;
 // global variabls, extern in Macros.h
 Menu *menu = [Menu alloc];
 Switches *switches = [Switches alloc];
+-(bool)inited {
+    return MenuInited;
+}
+-(bool)needInit {
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    if([UIApplication sharedApplication].keyWindow != NULL) {
+        if(!MenuInited) {
+            MenuInited = true;
+            return MenuInited;
+        }
+    }
+    return false;
+    #pragma clang diagnostic pop
+}
 
 
--(id)initWithTitle:(NSString *)title_ titleColor:(UIColor *)titleColor_ titleFont:(NSString *)titleFont_ credits:(NSString *)credits_ headerColor:(UIColor *)headerColor_ switchOffColor:(UIColor *)switchOffColor_ switchOnColor:(UIColor *)switchOnColor_ switchTitleFont:(NSString *)switchTitleFont_ switchTitleColor:(UIColor *)switchTitleColor_ infoButtonColor:(UIColor *)infoButtonColor_ maxVisibleSwitches:(int)maxVisibleSwitches_ menuWidth:(CGFloat )menuWidth_ menuIcon:(NSString *)menuIconBase64_ menuButton:(NSString *)menuButtonBase64_ {
+-(id)initWithTitle:(NSString *)title_ titleColor:(UIColor *)titleColor_ titleFont:(NSString *)titleFont_ credits:(NSString *)credits_ headerColor:(UIColor *)headerColor_ addInfoTitleColor:(UIColor *)categoryColor_ switchOffColor:(UIColor *)switchOffColor_ switchOnColor:(UIColor *)switchOnColor_ switchTitleFont:(NSString *)switchTitleFont_ switchTitleColor:(UIColor *)switchTitleColor_ infoButtonColor:(UIColor *)infoButtonColor_ maxVisibleSwitches:(int)maxVisibleSwitches_ menuWidth:(CGFloat )menuWidth_ menuIcon:(NSString *)menuIconBase64_ menuButton:(NSString *)menuButtonBase64_ {
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     mainWindow = [UIApplication sharedApplication].keyWindow;
+    #pragma clang diagnostic pop 
     defaults = [NSUserDefaults standardUserDefaults];
 
     menuWidth = menuWidth_;
     switchOnColor = switchOnColor_;
     credits = credits_;
+    categoryColor = categoryColor_;
     switchTitleFont = switchTitleFont_;
     switchTitleColor = switchTitleColor_;
     infoButtonColor = infoButtonColor_;
@@ -153,6 +176,13 @@ Switches *switches = [Switches alloc];
     }
 }
 
+-(void) restoreForced {
+    if(!hasRestoredLastSession) {
+        restoreLastSession();
+        hasRestoredLastSession = true;
+    }
+}
+
 /**********************************************************************************************
      This function will be called when the menu has been opened for the first time on launch.
      It'll handle the correct background color and patches the switches do.
@@ -229,7 +259,7 @@ void restoreLastSession() {
     alert.customViewColor = [UIColor purpleColor];
     alert.showAnimationType = SCLAlertViewShowAnimationFadeIn;
 
-    [alert addButton: @"Ok!" actionBlock: ^(void) {
+    [alert addButton: NSSENCRYPT("Ok!") actionBlock: ^(void) {
         self.layer.opacity = 1.0f;
     }];
 
@@ -247,6 +277,11 @@ void restoreLastSession() {
     [scrollView addSubview:switch_];
 }
 
+- (void)addInfoToMenu:(id)info_ {
+    scrollViewHeight += [info_ getHeight];
+    scrollView.contentSize = CGSizeMake(menuWidth, scrollViewHeight);
+    [scrollView addSubview:info_];
+}
 - (void)changeSwitchBackground:(id)switch_ isSwitchOn:(BOOL)isSwitchOn_ {
     UIColor *clearColor = [UIColor clearColor];
 
@@ -297,7 +332,35 @@ void restoreLastSession() {
 }
 @end // End of menu class!
 
+/********************************
+    CATEGORY STARTS HERE!
+*********************************/
 
+@implementation Category {
+    int Height;
+}
+
+- (id) initCategory:(NSString *)description_ height:(int)height_ {
+    Height = height_;
+    self = [super initWithFrame:CGRectMake(-1, scrollViewX + scrollViewHeight - 1, menuWidth + 2, Height)];
+    self.backgroundColor = [UIColor clearColor];
+    self.layer.borderWidth = 0.5f;
+    self.layer.borderColor = [UIColor whiteColor].CGColor;
+
+    categoryLabel = [[UILabel alloc]initWithFrame:CGRectMake(3, 0, menuWidth, Height)];
+    categoryLabel.text = description_;
+    categoryLabel.textAlignment = NSTextAlignmentCenter;
+    categoryLabel.textColor = categoryColor;
+    categoryLabel.font = [UIFont fontWithName:switchTitleFont size:14];
+    [self addSubview:categoryLabel];
+    return self;
+}
+
+-(int)getHeight {
+    return Height;
+}
+
+@end //end of Category class
 /********************************
     OFFSET SWITCH STARTS HERE!
 *********************************/
@@ -306,31 +369,59 @@ void restoreLastSession() {
     std::vector<MemoryPatch> memoryPatches;
 }
 
-- (id)initHackNamed:(NSString *)hackName_ description:(NSString *)description_ offsets:(std::vector<uint64_t>)offsets_ bytes:(std::vector<std::string>)bytes_ {
+- (id)initHackNamed:(NSString *)hackName_ description:(NSString *)description_ offsets:(std::vector<std::string>)offsets_ bytes:(std::vector<std::string>)bytes_ {
+	NSString* hackName = hackName_;
     description = description_;
     preferencesKey = hackName_;
+	UIColor* backBtnColor = [UIColor clearColor];
+	UIColor* infoBtnColor = infoButtonColor;
 
     if(offsets_.size() != bytes_.size()){
-        [menu showPopup:@"Invalid input count" description:[NSString stringWithFormat:@"Offsets array input count (%d) is not equal to the bytes array input count (%d)", (int)offsets_.size(), (int)bytes_.size()]];
+        [menu showPopup:NSSENCRYPT("Invalid input count") description:[NSString stringWithFormat:NSSENCRYPT("Offsets array input count (%d) is not equal to the bytes array input count (%d)"), (int)offsets_.size(), (int)bytes_.size()]];
     } else {
-        // For each offset, we create a MemoryPatch.
         for(int i = 0; i < offsets_.size(); i++) {
-            MemoryPatch patch = MemoryPatch::createWithHex([menu getFrameworkName], offsets_[i], bytes_[i]);
-            if(patch.isValid()) {
-              memoryPatches.push_back(patch);
+            uintptr_t offset = strtoull(offsets_[i].c_str(), NULL, 0);
+
+            uintptr_t address;
+            if(offset != 0) {
+                address = (uintptr_t)KittyMemory::getAbsoluteAddress([menu getFrameworkName], offset);
             } else {
-              [menu showPopup:@"Invalid patch" description:[NSString stringWithFormat:@"Failing offset: 0x%llx, please re-check the hex you entered.", offsets_[i]]];
+                address = (uintptr_t)dlsym((void *)RTLD_DEFAULT, offsets_[i].c_str());
+            }
+
+            MemoryPatch patch;
+            std::string data = bytes_[i];
+            std::string asm_data = data;
+            if(KittyUtils::String::ValidateHex(data)) {
+                patch = MemoryPatch::createWithHex(address, data);
+            } else {
+#ifndef kNO_KEYSTONE
+            patch = MemoryPatch::createWithAsm(address, MP_ASM_ARM64, asm_data, 0);
+#else
+			hackName = [NSSENCRYPT("[FAIL]") stringByAppendingString:hackName];
+			description = NSSENCRYPT("Failed: Non-hex data provided and ASM not supported");
+			backBtnColor = [UIColor brownColor];
+			infoBtnColor = [UIColor redColor];
+#endif
+            }
+            if(patch.isValid()) {
+                memoryPatches.push_back(patch);
+	        } else {
+				hackName = [NSSENCRYPT("[FAIL]") stringByAppendingString:hackName];
+				description = NSSENCRYPT("Failed: !patch.isValid");
+				backBtnColor = [UIColor brownColor];
+				infoBtnColor = [UIColor redColor];
             }
         }
     }
 
     self = [super initWithFrame:CGRectMake(-1, scrollViewX + scrollViewHeight - 1, menuWidth + 2, 50)];
-    self.backgroundColor = [UIColor clearColor];
+    self.backgroundColor = backBtnColor;
     self.layer.borderWidth = 0.5f;
     self.layer.borderColor = [UIColor whiteColor].CGColor;
 
     switchLabel = [[UILabel alloc]initWithFrame:CGRectMake(20, 0, menuWidth - 60, 50)];
-    switchLabel.text = hackName_;
+    switchLabel.text = hackName;
     switchLabel.textColor = switchTitleColor;
     switchLabel.font = [UIFont fontWithName:switchTitleFont size:18];
     switchLabel.adjustsFontSizeToFitWidth = true;
@@ -339,7 +430,7 @@ void restoreLastSession() {
 
     UIButton *infoButton = [UIButton buttonWithType:UIButtonTypeInfoDark];
     infoButton.frame = CGRectMake(menuWidth - 30, 15, 20, 20);
-    infoButton.tintColor = infoButtonColor;
+    infoButton.tintColor = infoBtnColor;
 
     UITapGestureRecognizer *infoTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(showInfo:)];
     [infoButton addGestureRecognizer:infoTap];
@@ -377,12 +468,14 @@ void restoreLastSession() {
 
 @implementation TextFieldSwitch {
     UITextField *textfieldValue;
+    UIColor *inputBorderColor;
 }
 
 - (id)initTextfieldNamed:(NSString *)hackName_ description:(NSString *)description_ inputBorderColor:(UIColor *)inputBorderColor_ {
     preferencesKey = hackName_;
     switchValueKey = [hackName_ stringByApplyingTransform:NSStringTransformLatinToCyrillic reverse:false];
     description = description_;
+    inputBorderColor = inputBorderColor_;
 
     self = [super initWithFrame:CGRectMake(-1, scrollViewX + scrollViewHeight -1, menuWidth + 2, 50)];
     self.backgroundColor = [UIColor clearColor];
@@ -399,7 +492,7 @@ void restoreLastSession() {
 
     textfieldValue = [[UITextField alloc]initWithFrame:CGRectMake(menuWidth / 4 - 10, switchLabel.self.bounds.origin.x - 5 + switchLabel.self.bounds.size.height, menuWidth / 2, 20)];
     textfieldValue.layer.borderWidth = 2.0f;
-    textfieldValue.layer.borderColor = inputBorderColor_.CGColor;
+    textfieldValue.layer.borderColor = inputBorderColor.CGColor;
     textfieldValue.layer.cornerRadius = 10.0f;
     textfieldValue.textColor = switchTitleColor;
     textfieldValue.textAlignment = NSTextAlignmentCenter;
@@ -410,6 +503,8 @@ void restoreLastSession() {
     if([[NSUserDefaults standardUserDefaults] objectForKey:switchValueKey] != nil) {
         textfieldValue.text = [[NSUserDefaults standardUserDefaults] objectForKey:switchValueKey];
     }
+
+    [self updateTextFieldAppearance];
 
     UIButton *infoButton = [UIButton buttonWithType:UIButtonTypeInfoDark];
     infoButton.frame = CGRectMake(menuWidth - 30, 15, 20, 20);
@@ -430,7 +525,16 @@ void restoreLastSession() {
     [defaults setObject:textfieldValue_.text forKey:[self getSwitchValueKey]];
     [textfieldValue_ resignFirstResponder];
 
+    [self updateTextFieldAppearance];
     return true;
+}
+
+- (void)updateTextFieldAppearance {
+    if (textfieldValue.text.length > 0) {
+        textfieldValue.layer.borderColor = inputBorderColor.CGColor;
+    } else {
+        textfieldValue.layer.borderColor = [UIColor grayColor].CGColor;
+    }
 }
 
 -(NSString *)getSwitchValueKey {
@@ -444,16 +548,17 @@ void restoreLastSession() {
     SLIDER SWITCH STARTS HERE!
     - Note that this extends from TextFieldSwitch
  *******************************/
-
 @implementation SliderSwitch {
     UISlider *sliderValue;
     float valueOfSlider;
+    UIColor *sliderColor;
 }
 
-- (id)initSliderNamed:(NSString *)hackName_ description:(NSString *)description_ minimumValue:(float)minimumValue_ maximumValue:(float)maximumValue_ sliderColor:(UIColor *)sliderColor_{
+- (id)initSliderNamed:(NSString *)hackName_ description:(NSString *)description_ minimumValue:(float)minimumValue_ maximumValue:(float)maximumValue_ sliderColor:(UIColor *)sliderColor_ {
     preferencesKey = hackName_;
     switchValueKey = [hackName_ stringByApplyingTransform:NSStringTransformLatinToCyrillic reverse:false];
     description = description_;
+    sliderColor = sliderColor_;
 
     self = [super initWithFrame:CGRectMake(-1, scrollViewX + scrollViewHeight -1, menuWidth + 2, 50)];
     self.backgroundColor = [UIColor clearColor];
@@ -461,17 +566,14 @@ void restoreLastSession() {
     self.layer.borderColor = [UIColor whiteColor].CGColor;
 
     switchLabel = [[UILabel alloc]initWithFrame:CGRectMake(20, 0, menuWidth - 60, 30)];
-    switchLabel.text = [NSString stringWithFormat:@"%@ %.2f", hackName_, sliderValue.value];
-    switchLabel.textColor = switchTitleColor;
+    [self updateLabelText];
     switchLabel.font = [UIFont fontWithName:switchTitleFont size:18];
     switchLabel.adjustsFontSizeToFitWidth = true;
     switchLabel.textAlignment = NSTextAlignmentCenter;
     [self addSubview:switchLabel];
 
     sliderValue = [[UISlider alloc]initWithFrame:CGRectMake(menuWidth / 4 - 20, switchLabel.self.bounds.origin.x - 4 + switchLabel.self.bounds.size.height, menuWidth / 2 + 20, 20)];
-    sliderValue.thumbTintColor = sliderColor_;
-    sliderValue.minimumTrackTintColor = switchTitleColor;
-    sliderValue.maximumTrackTintColor = switchTitleColor;
+    [self updateSliderAppearance];
     sliderValue.minimumValue = minimumValue_;
     sliderValue.maximumValue = maximumValue_;
     sliderValue.continuous = true;
@@ -479,9 +581,10 @@ void restoreLastSession() {
     valueOfSlider = sliderValue.value;
 
     // get value from the plist & show it (if it's not empty).
-    if([[NSUserDefaults standardUserDefaults] objectForKey:switchValueKey] != nil) {
+    if([[NSUserDefaults standardUserDefaults] objectForKey:switchValueKey] != nil && [[NSUserDefaults standardUserDefaults] floatForKey:switchValueKey] != 0) {
         sliderValue.value = [[NSUserDefaults standardUserDefaults] floatForKey:switchValueKey];
-        switchLabel.text = [NSString stringWithFormat:@"%@ %.2f", hackName_, sliderValue.value];
+        [self updateLabelText];
+        [self updateSliderAppearance];
     }
 
     UIButton *infoButton = [UIButton buttonWithType:UIButtonTypeInfoLight];
@@ -497,35 +600,91 @@ void restoreLastSession() {
     return self;
 }
 
--(void)sliderValueChanged:(UISlider *)slider_ {
-    switchValueKey = [[self getPreferencesKey] stringByApplyingTransform:NSStringTransformLatinToCyrillic reverse:false];
-    switchLabel.text = [NSString stringWithFormat:@"%@ %.2f", [self getPreferencesKey], slider_.value];
-    [defaults setFloat:slider_.value forKey:[self getSwitchValueKey]];
+- (void)updateSliderAppearance {
+    BOOL isZero = (sliderValue.value == 0.0f);
+
+    sliderValue.thumbTintColor = isZero ? [UIColor grayColor] : sliderColor;
+    sliderValue.minimumTrackTintColor = isZero ? [UIColor grayColor] : sliderColor;
+    sliderValue.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.3];
 }
 
+- (void)updateLabelText {
+    NSString *baseText = [self getPreferencesKey];
+    NSString *valueText = [NSString stringWithFormat:NSSENCRYPT(" %.2f"), sliderValue.value];
+    
+    BOOL isZero = (sliderValue.value == 0.0f);
+    UIColor *valueColor = isZero ? [UIColor grayColor] : sliderColor;
+    
+    NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] 
+        initWithString:[baseText stringByAppendingString:valueText]];
+    
+    [attributedText addAttribute:NSForegroundColorAttributeName 
+                          value:switchTitleColor 
+                          range:NSMakeRange(0, baseText.length)];
+    [attributedText addAttribute:NSForegroundColorAttributeName 
+                          value:valueColor 
+                          range:NSMakeRange(baseText.length, valueText.length)];
+    switchLabel.attributedText = attributedText;
+}
+
+-(void)sliderValueChanged:(UISlider *)slider_ {
+    switchValueKey = [[self getPreferencesKey] stringByApplyingTransform:NSStringTransformLatinToCyrillic reverse:false];
+    
+    [self updateLabelText];
+    [self updateSliderAppearance];
+    
+    [defaults setFloat:slider_.value forKey:[self getSwitchValueKey]];
+}
 @end // end of SliderSwitch class
 
 
 
-
-
+/*******************************
+    BASE SWITCHES STARTS HERE!
+ *******************************/
 @implementation Switches
 
-
--(void)addSwitch:(NSString *)hackName_ description:(NSString *)description_ {
-    OffsetSwitch *offsetPatch = [[OffsetSwitch alloc]initHackNamed:hackName_ description:description_ offsets:std::vector<uint64_t>{} bytes:std::vector<std::string>{}];
-    [menu addSwitchToMenu:offsetPatch];
-
+-(void)addInfo:(NSString *)description_ height:(std::string)height_ {
+    int iheight = std::stoi(height_);
+    Category *category = [[Category alloc]initCategory:description_ height:iheight];
+    [menu addInfoToMenu:category];
 }
 
-- (void)addOffsetSwitch:(NSString *)hackName_ description:(NSString *)description_ offsets:(std::initializer_list<uint64_t>)offsets_ bytes:(std::initializer_list<std::string>)bytes_ {
-    std::vector<uint64_t> offsetVector;
+-(void)addSwitch:(NSString *)hackName_ description:(NSString *)description_ {
+    OffsetSwitch *offsetPatch = [[OffsetSwitch alloc]initHackNamed:hackName_ description:description_ offsets:std::vector<std::string>{} bytes:std::vector<std::string>{}];
+    [menu addSwitchToMenu:offsetPatch];
+}
+
+- (void)addOffsetSwitch:(NSString *)hackName_ description:(NSString *)description_ offsets:(std::initializer_list<std::string>)offsets_ data:(std::initializer_list<std::string>)bytes_ {
+    std::vector<std::string> offsetVector;
     std::vector<std::string> bytesVector;
 
     offsetVector.insert(offsetVector.begin(), offsets_.begin(), offsets_.end());
     bytesVector.insert(bytesVector.begin(), bytes_.begin(), bytes_.end());
 
     OffsetSwitch *offsetPatch = [[OffsetSwitch alloc]initHackNamed:hackName_ description:description_ offsets:offsetVector bytes:bytesVector];
+    [menu addSwitchToMenu:offsetPatch];
+}
+
+- (void)addOffsetSwitch:(NSString *)hackName_ description:(NSString *)description_ roots:(std::initializer_list<std::string>)roots_ offsets:(std::initializer_list<std::string>)offsets_ data:(std::initializer_list<std::string>)bytes_ {
+    
+    std::vector<std::string> offsetVector;
+    std::vector<std::string> bytesVector;
+    
+    auto rootIt = roots_.begin();
+    auto offsetIt = offsets_.begin();
+    auto bytesIt = bytes_.begin();
+    
+    for (; rootIt != roots_.end() && offsetIt != offsets_.end() && bytesIt != bytes_.end(); ++rootIt, ++offsetIt, ++bytesIt) {
+        uintptr_t root = strtoull(rootIt->c_str(), NULL, 0);
+        uintptr_t offset = strtoull(offsetIt->c_str(), NULL, 0);
+        uintptr_t relativeAddress = root + offset;
+        
+        offsetVector.push_back(std::to_string(relativeAddress));
+        bytesVector.push_back(*bytesIt);
+    }
+    
+    OffsetSwitch *offsetPatch = [[OffsetSwitch alloc] initHackNamed:hackName_ description:description_ offsets:offsetVector bytes:bytesVector];
     [menu addSwitchToMenu:offsetPatch];
 }
 
@@ -548,7 +707,7 @@ void restoreLastSession() {
         return [[NSUserDefaults standardUserDefaults] objectForKey:correctKey];
     }
     else if([[NSUserDefaults standardUserDefaults] floatForKey:correctKey]) {
-        NSString *sliderValue = [NSString stringWithFormat:@"%f", [[NSUserDefaults standardUserDefaults] floatForKey:correctKey]];
+        NSString *sliderValue = [NSString stringWithFormat:NSSENCRYPT("%f"), [[NSUserDefaults standardUserDefaults] floatForKey:correctKey]];
         return sliderValue;
     }
 

@@ -1,22 +1,22 @@
 TWEAK_NAME = Vncheat
 
-# 1. Tự động tìm tất cả file code
+# 1. Tìm tất cả file code trong folder và folder con
 Vncheat_FILES = $(shell find . -name "*.xm" -o -name "*.mm" -o -name "*.cpp" -o -name "*.m" -o -name "*.c")
 
-# 2. Ép nạp thư viện Objective-C và Substrate (Fix lỗi Undefined symbols)
-Vncheat_LDFLAGS = -lobjc -lsubstrate
+# 2. ÉP LIÊN KẾT: Thêm cờ -objc và các thư viện hệ thống (Fix lỗi Undefined symbols)
+Vncheat_LDFLAGS = -objc -lobjc -lsubstrate
 
-# 3. Thêm các Framework hệ thống cần thiết
+# 3. Danh sách Framework hệ thống bắt buộc
 Vncheat_FRAMEWORKS = UIKit Foundation Security QuartzCore CoreGraphics CoreText AVFoundation AudioToolbox Accelerate
 
-# 4. Thêm thư viện hỗ trợ
+# 4. Thư viện bổ trợ
 Vncheat_LIBRARIES = bz2 z sqlite3 c++ iconv
 
-# 5. Cấu hình biên dịch và chặn lỗi Module
+# 5. Cấu hình biên dịch (Chống lỗi Xcode 16)
 Vncheat_CFLAGS = -fobjc-arc -fno-modules -Wno-deprecated-declarations -Wno-error
 Vncheat_CCFLAGS = -fno-modules -Wno-deprecated-declarations -Wno-error
 
-# 6. Cấu hình kiến trúc
+# 6. Kiến trúc chip
 export ARCHS = arm64 arm64e
 export TARGET = iphone:clang:latest:15.0
 

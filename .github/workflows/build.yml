@@ -5,31 +5,27 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4 # Cập nhật lên v4 luôn cho đồng bộ
         with:
           submodules: recursive
 
-      - name: Setup Theos (Build Kit)
+      - name: Setup Theos
         run: |
-          # Cài đặt Theos vào thư mục người dùng để tránh lỗi quyền ghi
           export THEOS=$HOME/theos
           git clone --recursive https://github.com/theos/theos.git $THEOS
           
-      - name: Setup SDK (iOS Library)
+      - name: Setup SDK
         run: |
           export THEOS=$HOME/theos
-          # Tải bộ thư viện iOS để biên dịch
           git clone https://github.com/theos/sdks.git $THEOS/sdks
           
       - name: Compile Vncheat Dylib
         run: |
           export THEOS=$HOME/theos
-          # Lệnh build chính thức
           make package FINALPACKAGE=1
           
       - name: Upload Vncheat Product
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4 # <<< ĐỔI THÀNH V4 Ở ĐÂY LÀ HẾT LỖI
         with:
           name: Vncheat-Dylib-Package
           path: packages/*.deb
-

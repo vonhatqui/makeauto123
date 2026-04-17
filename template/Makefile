@@ -1,13 +1,14 @@
-# Đặt tên dự án là Vncheat
+# Tên dự án
 TWEAK_NAME = Vncheat
 
-# Chỉ định các file cần build (Đại ca kiểm tra xem folder có đúng file Tweak.xm và Menu.mm không nhé)
-Vncheat_FILES = Tweak.xm Menu.mm ImGui/imgui.cpp ImGui/imgui_draw.cpp ImGui/imgui_demo.cpp ImGui/imgui_widgets.cpp
+# LỆNH THÔNG MINH: Tự động tìm tất cả file .xm, .mm, .cpp trong folder gốc và folder ImGui
+Vncheat_FILES = $(wildcard *.xm) $(wildcard *.mm) $(wildcard *.cpp) $(wildcard ImGui/*.cpp) $(wildcard ImGui/*.mm)
 
-# Các thư viện bắt buộc để Menu hoạt động
+# Các thư viện hệ thống
 Vncheat_FRAMEWORKS = UIKit Foundation Security QuartzCore CoreGraphics CoreText
+Vncheat_LIBRARIES = bz2 z
 
-# Cấu hình biên dịch cho chip iPhone đời mới (arm64 và arm64e)
+# Cấu hình cho iPhone
 export ARCHS = arm64 arm64e
 export TARGET = iphone:clang:latest:14.0
 

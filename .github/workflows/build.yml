@@ -9,7 +9,7 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Setup Theos & Vendor
+      - name: Setup Theos
         run: |
           export THEOS=$HOME/theos
           rm -rf $THEOS
@@ -17,35 +17,30 @@ jobs:
           cd $THEOS
           git submodule update --init --recursive
           ./bin/update-theos
-          # Tải thêm file header/lib cho Substrate
+          # Nạp headers cần thiết cho substrate
           curl -L https://github.com/theos/headers/archive/master.tar.gz | tar -xz -C $THEOS/include --strip-components=1
           brew install ldid
           
-      - name: Setup SDK (Clean)
+      - name: Setup SDK (iPhoneOS 16.5)
         run: |
           export THEOS=$HOME/theos
           rm -rf $THEOS/sdks
           git clone --depth 1 https://github.com/theos/sdks.git $THEOS/sdks
 
-      - name: Fix Missing dm.pl
-        run: |
-          curl -LO https://raw.githubusercontent.com/theos/theos/master/bin/dm.pl
-          mv dm.pl $HOME/theos/bin/
-          chmod +x $HOME/theos/bin/dm.pl
-
-      - name: Compile Vncheat Dylib
+      - name: Compile Vncheat
         run: |
           export THEOS=$HOME/theos
           cd template
           SDK_PATH=$(find $THEOS/sdks -name "iPhoneOS*.sdk" -type d | head -n 1)
-          # Thêm cờ để ép nhận thư viện substrate
+          # Build chính thức
           make package FINALPACKAGE=1 SYSROOT=$SDK_PATH
           
-      - name: Upload Vncheat Product
+      - name: Upload Product
         uses: actions/upload-artifact@v4
         with:
           name: Vncheat-Dylib-Package
           path: template/packages/*.deb
+
 
 
 

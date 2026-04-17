@@ -13,19 +13,22 @@ jobs:
         run: |
           export THEOS=$HOME/theos
           git clone --depth 1 https://github.com/theos/theos.git $THEOS
-          # Cài đặt ldid để ký file, tránh văng game
+          # Cài đặt công cụ ký file để không bị văng game
           brew install ldid
           
-      - name: Setup SDK
+      - name: Setup SDK (Auto-Fix Version)
         run: |
           export THEOS=$HOME/theos
           mkdir -p $THEOS/sdks
+          # Tải bộ SDK chuẩn
           curl -LO https://github.com/theos/sdks/archive/master.tar.gz
           tar -xf master.tar.gz -C $THEOS/sdks --strip-components=1
+          # Xóa các file thừa để tránh nhầm lẫn
+          rm master.tar.gz
 
       - name: Fix Missing dm.pl
         run: |
-          # Tải công cụ đóng gói dm.pl vào hệ thống
+          # Sửa lỗi 'dm.pl missing' khiến không đóng gói được file
           curl -LO https://raw.githubusercontent.com/theos/theos/master/bin/dm.pl
           mv dm.pl $HOME/theos/bin/
           chmod +x $HOME/theos/bin/dm.pl
@@ -33,13 +36,18 @@ jobs:
       - name: Compile Vncheat Dylib
         run: |
           export THEOS=$HOME/theos
-          # CHỈ ĐƯỜNG DẪN: Chui vào folder template trước khi build
+          # 1. Chui vào folder chứa code
           cd template
-          make package FINALPACKAGE=1
+          
+          # 2. Tự động tìm tên SDK thực tế trong folder sdks
+          SDK_NAME=$(ls $THEOS/sdks | head -n 1)
+          echo "Đang build với SDK: $SDK_NAME"
+          
+          # 3. Ép Theos dùng SDK đã tìm thấy, bỏ qua lỗi version 11.2
+          make package FINALPACKAGE=1 SYSROOT=$THEOS/sdks/$SDK_NAME
           
       - name: Upload Vncheat Product
         uses: actions/upload-artifact@v4
         with:
           name: Vncheat-Dylib-Package
-          # Chỉ định đường dẫn file kết quả nằm trong folder template
           path: template/packages/*.deb

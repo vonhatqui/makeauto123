@@ -12,16 +12,19 @@ jobs:
       - name: Setup Theos & Vendor
         run: |
           export THEOS=$HOME/theos
+          # Xóa thư mục cũ nếu có để tránh lỗi 128
+          rm -rf $THEOS
           git clone --depth 1 https://github.com/theos/theos.git $THEOS
           cd $THEOS
           git submodule update --init --recursive
           ./bin/update-theos
           brew install ldid
           
-      - name: Setup SDK (Dùng Git Clone cho chắc)
+      - name: Setup SDK (Force Clean)
         run: |
           export THEOS=$HOME/theos
-          # Tải bộ SDK trực tiếp từ kho chính chủ, không sợ lỗi file nén
+          # Đảm bảo thư mục sdks trống trước khi tải
+          rm -rf $THEOS/sdks
           git clone --depth 1 https://github.com/theos/sdks.git $THEOS/sdks
 
       - name: Fix Missing dm.pl
@@ -35,12 +38,11 @@ jobs:
           export THEOS=$HOME/theos
           cd template
           
-          # Tự động tìm SDK iPhone có sẵn trong máy ảo
-          # Ưu tiên SDK 16.5 hoặc bất kỳ bản iPhoneOS nào tìm thấy
+          # Tìm SDK iPhone trong folder vừa tải
           SDK_PATH=$(find $THEOS/sdks -name "iPhoneOS*.sdk" -type d | head -n 1)
           echo "Đang build với SDK: $SDK_PATH"
           
-          # Lệnh build với cờ chặn lỗi Module cho Xcode 16
+          # Build với cờ chống lỗi Xcode 16
           make package FINALPACKAGE=1 SYSROOT=$SDK_PATH \
           ADDITIONAL_CFLAGS="-fobjc-arc -fno-modules" \
           ADDITIONAL_CCFLAGS="-fno-modules"
@@ -50,6 +52,7 @@ jobs:
         with:
           name: Vncheat-Dylib-Package
           path: template/packages/*.deb
+
 
 
 

@@ -26,7 +26,7 @@ jobs:
         run: |
           export THEOS=$HOME/theos
           # --- ĐOẠN QUAN TRỌNG NHẤT ---
-          # Thay 'Tempalate' bằng tên folder chứa file Makefile
+          # Thay 'template' bằng tên folder chứa file Makefile
           # Nếu file Makefile nằm ngay ở ngoài (không nằm trong folder nào) thì XÓA dòng cd này đi
           cd TEN_THU_MUC_CUA_BAN 
           # ----------------------------

@@ -9,26 +9,27 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Setup Theos
+      - name: Setup Theos & Vendor
         run: |
           export THEOS=$HOME/theos
           git clone --depth 1 https://github.com/theos/theos.git $THEOS
-          # Cài đặt công cụ ký file để không bị văng game
+          # Tải thêm các thư viện vendor đang thiếu
+          cd $THEOS
+          git submodule update --init --recursive
+          ./bin/update-theos
           brew install ldid
           
-      - name: Setup SDK (Auto-Fix Version)
+      - name: Setup SDK (Force iPhoneOS)
         run: |
           export THEOS=$HOME/theos
           mkdir -p $THEOS/sdks
-          # Tải bộ SDK chuẩn
           curl -LO https://github.com/theos/sdks/archive/master.tar.gz
           tar -xf master.tar.gz -C $THEOS/sdks --strip-components=1
-          # Xóa các file thừa để tránh nhầm lẫn
-          rm master.tar.gz
+          # Xóa các SDK không phải iPhone để tránh nhận nhầm
+          rm -rf $THEOS/sdks/AppleTVOS* $THEOS/sdks/WatchOS*
 
       - name: Fix Missing dm.pl
         run: |
-          # Sửa lỗi 'dm.pl missing' khiến không đóng gói được file
           curl -LO https://raw.githubusercontent.com/theos/theos/master/bin/dm.pl
           mv dm.pl $HOME/theos/bin/
           chmod +x $HOME/theos/bin/dm.pl
@@ -36,14 +37,13 @@ jobs:
       - name: Compile Vncheat Dylib
         run: |
           export THEOS=$HOME/theos
-          # 1. Chui vào folder chứa code
           cd template
           
-          # 2. Tự động tìm tên SDK thực tế trong folder sdks
-          SDK_NAME=$(ls $THEOS/sdks | head -n 1)
-          echo "Đang build với SDK: $SDK_NAME"
+          # Tự động lấy cái SDK iPhone đầu tiên tìm thấy
+          SDK_NAME=$(ls $THEOS/sdks | grep iPhoneOS | head -n 1)
+          echo "Đang build với SDK chuẩn: $SDK_NAME"
           
-          # 3. Ép Theos dùng SDK đã tìm thấy, bỏ qua lỗi version 11.2
+          # Ép dùng SDK iPhone và bỏ qua kiểm tra vendor
           make package FINALPACKAGE=1 SYSROOT=$THEOS/sdks/$SDK_NAME
           
       - name: Upload Vncheat Product
@@ -51,3 +51,4 @@ jobs:
         with:
           name: Vncheat-Dylib-Package
           path: template/packages/*.deb
+

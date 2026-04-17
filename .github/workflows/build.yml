@@ -8,12 +8,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 0
 
       - name: Setup Theos
         run: |
           export THEOS=$HOME/theos
           git clone --depth 1 https://github.com/theos/theos.git $THEOS
+          # Cài đặt thêm ldid để ký file dylib
+          brew install ldid
           
       - name: Setup SDK
         run: |
@@ -21,22 +22,25 @@ jobs:
           mkdir -p $THEOS/sdks
           curl -LO https://github.com/theos/sdks/archive/master.tar.gz
           tar -xf master.tar.gz -C $THEOS/sdks --strip-components=1
-          
+
+      - name: Fix Missing dm.pl (Sửa lỗi Error 1)
+        run: |
+          # Tải file dm.pl đang thiếu về đúng chỗ Theos cần
+          curl -LO https://raw.githubusercontent.com/theos/theos/master/bin/dm.pl
+          mv dm.pl $HOME/theos/bin/
+          chmod +x $HOME/theos/bin/dm.pl
+
       - name: Compile Vncheat Dylib
         run: |
           export THEOS=$HOME/theos
-          # --- ĐOẠN QUAN TRỌNG NHẤT ---
-          # Thay 'template' bằng tên folder chứa file Makefile
-          # Nếu file Makefile nằm ngay ở ngoài (không nằm trong folder nào) thì XÓA dòng cd này đi
-          cd template 
-          # ----------------------------
+          # Nếu file Makefile nằm trong folder thì thêm lệnh 'cd Ten_Folder' vào đây
           make package FINALPACKAGE=1
           
       - name: Upload Vncheat Product
         uses: actions/upload-artifact@v4
         with:
           name: Vncheat-Dylib-Package
-          # Nếu có dùng lệnh cd ở trên, thì đường dẫn path ở dưới cũng phải khớp
-          path: template/packages/*.deb
+          path: packages/*.deb
+
 
 

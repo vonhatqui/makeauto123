@@ -1,30 +1,35 @@
 name: Build Vncheat Dylib
-on: [push, workflow_dispatch] # Build mỗi khi lưu code hoặc nhấn nút thủ công
+on: [push, workflow_dispatch]
 
 jobs:
   build:
-    runs-on: macos-latest # Dùng máy ảo Mac để build dylib cho iPhone là chuẩn nhất
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
 
-      - name: Setup Theos (Bộ khung build)
+      - name: Setup Theos (Build Kit)
         run: |
-          sudo git clone --recursive https://github.com/theos/theos.git /opt/theos
-          sudo chown -R $USER /opt/theos
+          # Cài đặt Theos vào thư mục người dùng để tránh lỗi quyền ghi
+          export THEOS=$HOME/theos
+          git clone --recursive https://github.com/theos/theos.git $THEOS
           
-      - name: Setup SDK (Thư viện iOS)
+      - name: Setup SDK (iOS Library)
         run: |
-          git clone https://github.com/theos/sdks.git /opt/theos/sdks
+          export THEOS=$HOME/theos
+          # Tải bộ thư viện iOS để biên dịch
+          git clone https://github.com/theos/sdks.git $THEOS/sdks
           
-      - name: Compile Dylib (Chế biến)
+      - name: Compile Vncheat Dylib
         run: |
-          export THEOS=/opt/theos
+          export THEOS=$HOME/theos
+          # Lệnh build chính thức
           make package FINALPACKAGE=1
           
-      - name: Upload Product (Trả hàng)
+      - name: Upload Vncheat Product
         uses: actions/upload-artifact@v3
         with:
-          name: Vncheat-Dylib-File
-          path: packages/*.deb # File dylib sẽ nằm bên trong file .deb này
+          name: Vncheat-Dylib-Package
+          path: packages/*.deb
+

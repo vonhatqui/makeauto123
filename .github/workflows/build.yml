@@ -13,19 +13,17 @@ jobs:
         run: |
           export THEOS=$HOME/theos
           git clone --depth 1 https://github.com/theos/theos.git $THEOS
-          # Tải thêm các thư viện vendor đang thiếu
           cd $THEOS
           git submodule update --init --recursive
           ./bin/update-theos
           brew install ldid
           
-      - name: Setup SDK (Force iPhoneOS)
+      - name: Setup SDK
         run: |
           export THEOS=$HOME/theos
           mkdir -p $THEOS/sdks
           curl -LO https://github.com/theos/sdks/archive/master.tar.gz
           tar -xf master.tar.gz -C $THEOS/sdks --strip-components=1
-          # Xóa các SDK không phải iPhone để tránh nhận nhầm
           rm -rf $THEOS/sdks/AppleTVOS* $THEOS/sdks/WatchOS*
 
       - name: Fix Missing dm.pl
@@ -38,12 +36,10 @@ jobs:
         run: |
           export THEOS=$HOME/theos
           cd template
-          
-          # Tự động lấy cái SDK iPhone đầu tiên tìm thấy
+          # Tìm SDK iPhone thực tế
           SDK_NAME=$(ls $THEOS/sdks | grep iPhoneOS | head -n 1)
-          echo "Đang build với SDK chuẩn: $SDK_NAME"
-          
-          # Ép dùng SDK iPhone và bỏ qua kiểm tra vendor
+          echo "Đang build với SDK: $SDK_NAME"
+          # Lệnh build chính thức
           make package FINALPACKAGE=1 SYSROOT=$THEOS/sdks/$SDK_NAME
           
       - name: Upload Vncheat Product
@@ -51,4 +47,5 @@ jobs:
         with:
           name: Vncheat-Dylib-Package
           path: template/packages/*.deb
+
 

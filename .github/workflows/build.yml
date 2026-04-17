@@ -5,27 +5,34 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4 # Cập nhật lên v4 luôn cho đồng bộ
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0 # Tải toàn bộ lịch sử để tránh lỗi 128
 
       - name: Setup Theos
         run: |
           export THEOS=$HOME/theos
-          git clone --recursive https://github.com/theos/theos.git $THEOS
+          # Dùng lệnh clone đơn giản hơn, nếu lỗi sẽ tự dừng để báo rõ
+          git clone --depth 1 https://github.com/theos/theos.git $THEOS
           
-      - name: Setup SDK
+      - name: Setup SDK (Thư viện iOS)
         run: |
           export THEOS=$HOME/theos
-          git clone https://github.com/theos/sdks.git $THEOS/sdks
+          # Tải bộ SDK tối giản để tránh nặng máy gây lỗi 128
+          mkdir -p $THEOS/sdks
+          curl -LO https://github.com/theos/sdks/archive/master.tar.gz
+          tar -xf master.tar.gz -C $THEOS/sdks --strip-components=1
           
       - name: Compile Vncheat Dylib
         run: |
           export THEOS=$HOME/theos
+          # Build và bỏ qua các cảnh báo không quan trọng
           make package FINALPACKAGE=1
           
       - name: Upload Vncheat Product
-        uses: actions/upload-artifact@v4 # <<< ĐỔI THÀNH V4 Ở ĐÂY LÀ HẾT LỖI
+        uses: actions/upload-artifact@v4
         with:
           name: Vncheat-Dylib-Package
           path: packages/*.deb
+

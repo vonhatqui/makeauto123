@@ -37,6 +37,6 @@ jobs:
         with:
           name: Vncheat-Dylib-Package
           # Nếu có dùng lệnh cd ở trên, thì đường dẫn path ở dưới cũng phải khớp
-          path: TEN_THU_MUC_CUA_BAN/packages/*.deb
+          path: template/packages/*.deb
 
 

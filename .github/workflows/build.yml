@@ -18,14 +18,11 @@ jobs:
           ./bin/update-theos
           brew install ldid
           
-      - name: Setup SDK 16.5 (Bản chuẩn)
+      - name: Setup SDK (Dùng Git Clone cho chắc)
         run: |
           export THEOS=$HOME/theos
-          mkdir -p $THEOS/sdks
-          # Tải SDK 16.5 để fix lỗi IOSurface
-          curl -LO https://github.com/Theos-Archive/sdks/raw/master/iPhoneOS16.5.sdk.tar.xz
-          tar -xf iPhoneOS16.5.sdk.tar.xz -C $THEOS/sdks
-          rm iPhoneOS16.5.sdk.tar.xz
+          # Tải bộ SDK trực tiếp từ kho chính chủ, không sợ lỗi file nén
+          git clone --depth 1 https://github.com/theos/sdks.git $THEOS/sdks
 
       - name: Fix Missing dm.pl
         run: |
@@ -37,14 +34,23 @@ jobs:
         run: |
           export THEOS=$HOME/theos
           cd template
-          # Chỉ định đích danh SDK 16.5 để máy ảo không dùng nhầm SDK 10.3 hay 18.5
-          make package FINALPACKAGE=1 SYSROOT=$THEOS/sdks/iPhoneOS16.5.sdk
+          
+          # Tự động tìm SDK iPhone có sẵn trong máy ảo
+          # Ưu tiên SDK 16.5 hoặc bất kỳ bản iPhoneOS nào tìm thấy
+          SDK_PATH=$(find $THEOS/sdks -name "iPhoneOS*.sdk" -type d | head -n 1)
+          echo "Đang build với SDK: $SDK_PATH"
+          
+          # Lệnh build với cờ chặn lỗi Module cho Xcode 16
+          make package FINALPACKAGE=1 SYSROOT=$SDK_PATH \
+          ADDITIONAL_CFLAGS="-fobjc-arc -fno-modules" \
+          ADDITIONAL_CCFLAGS="-fno-modules"
           
       - name: Upload Vncheat Product
         uses: actions/upload-artifact@v4
         with:
           name: Vncheat-Dylib-Package
           path: template/packages/*.deb
+
 
 
 

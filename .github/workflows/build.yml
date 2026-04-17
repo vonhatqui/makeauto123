@@ -28,7 +28,7 @@ jobs:
           # --- ĐOẠN QUAN TRỌNG NHẤT ---
           # Thay 'template' bằng tên folder chứa file Makefile
           # Nếu file Makefile nằm ngay ở ngoài (không nằm trong folder nào) thì XÓA dòng cd này đi
-          cd TEN_THU_MUC_CUA_BAN 
+          cd template 
           # ----------------------------
           make package FINALPACKAGE=1
           

@@ -12,18 +12,18 @@ jobs:
       - name: Setup Theos & Vendor
         run: |
           export THEOS=$HOME/theos
-          # Xóa thư mục cũ nếu có để tránh lỗi 128
           rm -rf $THEOS
           git clone --depth 1 https://github.com/theos/theos.git $THEOS
           cd $THEOS
           git submodule update --init --recursive
           ./bin/update-theos
+          # Tải thêm file header/lib cho Substrate
+          curl -L https://github.com/theos/headers/archive/master.tar.gz | tar -xz -C $THEOS/include --strip-components=1
           brew install ldid
           
-      - name: Setup SDK (Force Clean)
+      - name: Setup SDK (Clean)
         run: |
           export THEOS=$HOME/theos
-          # Đảm bảo thư mục sdks trống trước khi tải
           rm -rf $THEOS/sdks
           git clone --depth 1 https://github.com/theos/sdks.git $THEOS/sdks
 
@@ -37,21 +37,16 @@ jobs:
         run: |
           export THEOS=$HOME/theos
           cd template
-          
-          # Tìm SDK iPhone trong folder vừa tải
           SDK_PATH=$(find $THEOS/sdks -name "iPhoneOS*.sdk" -type d | head -n 1)
-          echo "Đang build với SDK: $SDK_PATH"
-          
-          # Build với cờ chống lỗi Xcode 16
-          make package FINALPACKAGE=1 SYSROOT=$SDK_PATH \
-          ADDITIONAL_CFLAGS="-fobjc-arc -fno-modules" \
-          ADDITIONAL_CCFLAGS="-fno-modules"
+          # Thêm cờ để ép nhận thư viện substrate
+          make package FINALPACKAGE=1 SYSROOT=$SDK_PATH
           
       - name: Upload Vncheat Product
         uses: actions/upload-artifact@v4
         with:
           name: Vncheat-Dylib-Package
           path: template/packages/*.deb
+
 
 
 

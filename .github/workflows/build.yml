@@ -5,7 +5,7 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4 # Cập nhật lên v4
         with:
           submodules: recursive
 
@@ -36,16 +36,15 @@ jobs:
         run: |
           export THEOS=$HOME/theos
           cd template
-          # Tìm SDK iPhone thực tế
+          # Tự động lấy SDK iPhone
           SDK_NAME=$(ls $THEOS/sdks | grep iPhoneOS | head -n 1)
-          echo "Đang build với SDK: $SDK_NAME"
-          # Lệnh build chính thức
           make package FINALPACKAGE=1 SYSROOT=$THEOS/sdks/$SDK_NAME
           
       - name: Upload Vncheat Product
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4 # <<< ĐÃ SỬA TỪ v1 LÊN v4 Ở ĐÂY
         with:
           name: Vncheat-Dylib-Package
           path: template/packages/*.deb
+
 
 

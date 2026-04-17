@@ -113,7 +113,8 @@ static void didFinishLaunching(CFNotificationCenterRef center, void *observer, C
 
     // Website link, remove it if you don't need it.
     [alert addButton: NSSENCRYPT("Visit Me!") actionBlock: ^(void) {
-      [[UIApplication sharedApplication] openURL: [NSURL URLWithString: NSSENCRYPT("@@SITE@@")]];
+      [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"..."] options:@{} completionHandler:nil];
+
       timer(2) {
         setupMenu();
       });        

@@ -8,18 +8,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 0 # Tải toàn bộ lịch sử để tránh lỗi 128
+          fetch-depth: 0
 
       - name: Setup Theos
         run: |
           export THEOS=$HOME/theos
-          # Dùng lệnh clone đơn giản hơn, nếu lỗi sẽ tự dừng để báo rõ
           git clone --depth 1 https://github.com/theos/theos.git $THEOS
           
-      - name: Setup SDK (Thư viện iOS)
+      - name: Setup SDK
         run: |
           export THEOS=$HOME/theos
-          # Tải bộ SDK tối giản để tránh nặng máy gây lỗi 128
           mkdir -p $THEOS/sdks
           curl -LO https://github.com/theos/sdks/archive/master.tar.gz
           tar -xf master.tar.gz -C $THEOS/sdks --strip-components=1
@@ -27,12 +25,18 @@ jobs:
       - name: Compile Vncheat Dylib
         run: |
           export THEOS=$HOME/theos
-          # Build và bỏ qua các cảnh báo không quan trọng
+          # --- ĐOẠN QUAN TRỌNG NHẤT ---
+          # Thay 'Tempalate' bằng tên folder chứa file Makefile
+          # Nếu file Makefile nằm ngay ở ngoài (không nằm trong folder nào) thì XÓA dòng cd này đi
+          cd TEN_THU_MUC_CUA_BAN 
+          # ----------------------------
           make package FINALPACKAGE=1
           
       - name: Upload Vncheat Product
         uses: actions/upload-artifact@v4
         with:
           name: Vncheat-Dylib-Package
-          path: packages/*.deb
+          # Nếu có dùng lệnh cd ở trên, thì đường dẫn path ở dưới cũng phải khớp
+          path: TEN_THU_MUC_CUA_BAN/packages/*.deb
+
 

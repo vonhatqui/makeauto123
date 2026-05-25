@@ -1,50 +1,35 @@
-name: Build Vncheat Dylib
-on: [push, workflow_dispatch]
+name: Build iOS Dynamic Library
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Cho phép bạn bấm nút kích hoạt biên dịch thủ công trên giao diện web GitHub
 
 jobs:
-  build:
+  build-ios:
     runs-on: macos-latest
+
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+    # Bước 1: Lấy mã nguồn từ Repository
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Setup Theos
-        run: |
-          export THEOS=$HOME/theos
-          rm -rf $THEOS
-          git clone --depth 1 https://github.com/theos/theos.git $THEOS
-          cd $THEOS
-          git submodule update --init --recursive
-          ./bin/update-theos
-          # Nạp headers cần thiết cho substrate
-          curl -L https://github.com/theos/headers/archive/master.tar.gz | tar -xz -C $THEOS/include --strip-components=1
-          brew install ldid
-          
-      - name: Setup SDK (iPhoneOS 16.5)
-        run: |
-          export THEOS=$HOME/theos
-          rm -rf $THEOS/sdks
-          git clone --depth 1 https://github.com/theos/sdks.git $THEOS/sdks
+    # Bước 2: Thiết lập Xcode môi trường phát triển chính thức của Apple
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
-      - name: Compile Vncheat
-        run: |
-          export THEOS=$HOME/theos
-          cd template
-          SDK_PATH=$(find $THEOS/sdks -name "iPhoneOS*.sdk" -type d | head -n 1)
-          # Build chính thức
-          make package FINALPACKAGE=1 SYSROOT=$SDK_PATH
-          
-      - name: Upload Product
-        uses: actions/upload-artifact@v4
-        with:
-          name: Vncheat-Dylib-Package
-          path: template/packages/*.deb
+    # Bước 3: Biên dịch file mã nguồn IPAAntiBanSecurity.m thành dylib
+    - name: Compile Dynamic Library
+      run: |
+        xcrun -sdk iphoneos clang -dynamiclib -arch arm64 -miphoneos-version-min=12.0 \
+        -framework Foundation -framework UIKit \
+        IPAAntiBanSecurity.m -o IPAAntiBanSecurity.dylib
 
-
-
-
-
-
-
-
+    # Bước 4: Tải tệp sản phẩm dylib lên Artifact để bạn tải xuống
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: IPAAntiBanSecurity-Dylib
+        path: IPAAntiBanSecurity.dylib

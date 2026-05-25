@@ -14,7 +14,7 @@ jobs:
     steps:
     # Bước 1: Lấy mã nguồn từ Repository
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     # Bước 2: Thiết lập Xcode môi trường phát triển chính thức của Apple
     - name: Select Xcode version
@@ -29,7 +29,7 @@ jobs:
 
     # Bước 4: Tải tệp sản phẩm dylib lên Artifact để bạn tải xuống
     - name: Upload Build Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: IPAAntiBanSecurity-Dylib
         path: IPAAntiBanSecurity.dylib

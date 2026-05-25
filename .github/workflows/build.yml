@@ -14,7 +14,7 @@ jobs:
     steps:
     # Bước 1: Lấy mã nguồn từ Repository
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4aaaaaaaaaaa
 
     # Bước 2: Thiết lập Xcode môi trường phát triển chính thức của Apple
     - name: Select Xcode version

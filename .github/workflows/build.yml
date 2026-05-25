@@ -23,9 +23,17 @@ jobs:
     # Bước 3: Biên dịch file mã nguồn IPAAntiBanSecurity.m thành dylib
     - name: Compile Dynamic Library
       run: |
+        # Tìm kiếm vị trí thực tế của file IPAAntiBanSecurity.m trong repository
+        TARGET_FILE=$(find . -name "IPAAntiBanSecurity.m" -print -quit)
+        if [ -z "$TARGET_FILE" ]; then
+          echo "❌ Lỗi: Không tìm thấy file IPAAntiBanSecurity.m trong repository!"
+          exit 1
+        fi
+        echo "Found target file at: $TARGET_FILE"
+        
         xcrun -sdk iphoneos clang -dynamiclib -arch arm64 -miphoneos-version-min=12.0 \
         -framework Foundation -framework UIKit \
-        IPAAntiBanSecurity.m -o IPAAntiBanSecurity.dylib
+        "$TARGET_FILE" -o IPAAntiBanSecurity.dylib
 
     # Bước 4: Tải tệp sản phẩm dylib lên Artifact để bạn tải xuống
     - name: Upload Build Artifact
